@@ -1,20 +1,6 @@
 package schema
 
-import (
-	"database/sql"
-	"database/sql/driver"
-	"fmt"
-)
-
-type Column interface {
-	sql.Scanner
-	driver.Valuer
-	GetTable() *Table
-	SetTable(*Table)
-	GetName() string
-	SetName(string)
-	GetType() string
-}
+import "fmt"
 
 type Tabler interface {
 	Table() *Table
@@ -26,7 +12,7 @@ type Table struct {
 	columns map[string]Column
 }
 
-// A helper method to correctly initialize a table.
+// A helper method to correctly initialize a tabler type.
 func NewTable[T any]() *T {
 	table := new(T)
 	if t, ok := any(table).(Tabler); ok {

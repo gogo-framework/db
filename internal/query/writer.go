@@ -4,9 +4,9 @@ import (
 	"context"
 	"io"
 
-	"github.com/gogo-framework/db/pkg/dialect"
+	"github.com/gogo-framework/db/dialect"
 )
 
-type QueryWriter interface {
+type SqlWriter interface {
 	WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error)
 }

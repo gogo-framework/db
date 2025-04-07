@@ -1,10 +1,16 @@
-package query
+/*
+	This file contains a POC for mapping back rows to a table struct.
+	It'll not be used in the final version, but tries to proof that the current implementation
+	is good enough in order to map back results.
+*/
+
+package internal
 
 import (
 	"database/sql"
 	"fmt"
 
-	"github.com/gogo-framework/db/pkg/schema"
+	"github.com/gogo-framework/db/schema"
 )
 
 type RowMapper struct {

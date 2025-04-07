@@ -5,12 +5,11 @@ import (
 	"log"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/gogo-framework/db/pkg/dialect/sqlite"
-	"github.com/gogo-framework/db/pkg/query"
-	"github.com/gogo-framework/db/pkg/schema"
+	"github.com/gogo-framework/db/dialect/sqlite"
+	"github.com/gogo-framework/db/internal"
+	"github.com/gogo-framework/db/schema"
 )
 
-// User model with Text columns
 type User struct {
 	ID   sqlite.Text
 	Name sqlite.Text
@@ -26,6 +25,16 @@ func (u *User) Table() *schema.Table {
 }
 
 func main() {
+	user := schema.NewTable[User]()
+	query := sqlite.Select(
+		&user.ID, &user.Name, &user.Bio,
+		sqlite.From(user).As("u"),
+	).ToSql()
+	println(query)
+	// testMapping()
+}
+
+func testMapping() {
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		log.Fatalf("Failed to create mock DB: %v", err)
@@ -53,7 +62,7 @@ func main() {
 	for rows.Next() {
 		user := &User{}
 		table := user.Table()
-		mapper := query.NewRowMapper(table)
+		mapper := internal.NewRowMapper(table)
 
 		err := mapper.MapRow(rows)
 		if err != nil {
@@ -62,7 +71,7 @@ func main() {
 		}
 
 		fmt.Printf("- %s (%s): %s\n",
-			user.ID.String(), user.Name.String(), user.Bio.String())
+			user.ID.Get(), user.Name.Get(), user.Bio.Get())
 	}
 	rows.Close()
 
@@ -75,7 +84,7 @@ func main() {
 	if idRows.Next() {
 		user := &User{}
 		table := user.Table()
-		mapper := query.NewRowMapper(table)
+		mapper := internal.NewRowMapper(table)
 
 		err := mapper.MapRow(idRows)
 		if err != nil {
@@ -83,7 +92,7 @@ func main() {
 		}
 
 		fmt.Printf("ID=%s, Name=%s, Bio=%s\n",
-			user.ID.String(), user.Name.String(), user.Bio.String())
+			user.ID.Get(), user.Name.Get(), user.Bio.Get())
 	}
 	idRows.Close()
 }
