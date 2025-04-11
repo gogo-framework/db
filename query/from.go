@@ -1,4 +1,4 @@
-package clause
+package query
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/gogo-framework/db/schema"
 )
 
+// FromClause represents a FROM clause
 type FromClause struct {
 	Source schema.Tabler
 	Alias  string
@@ -16,17 +17,18 @@ type FromClause struct {
 
 func (f *FromClause) As(alias string) {
 	f.Alias = alias
+	if f.Source != nil {
+		table := f.Source.Table()
+		table.Alias = alias
+	}
 }
 
 func (f *FromClause) AppendJoins(joins ...any) {
 	f.Joins = append(f.Joins, joins...)
 }
 
-// Implement the SqlWriter interface
 func (f *FromClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
 	var args []any
-
-	w.Write([]byte("FROM "))
 
 	if f.Source != nil {
 		if f.Alias != "" {

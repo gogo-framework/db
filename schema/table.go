@@ -8,7 +8,7 @@ type Tabler interface {
 
 type Table struct {
 	Name    string
-	Schema  string
+	Alias   string
 	columns map[string]Column
 }
 

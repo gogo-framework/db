@@ -1,9 +1,13 @@
 package sqlite
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
+	"io"
 
+	"github.com/gogo-framework/db/dialect"
+	"github.com/gogo-framework/db/query"
 	"github.com/gogo-framework/db/schema"
 )
 
@@ -32,9 +36,53 @@ func (t *Text) Value() (driver.Value, error) { return t.value.Value() }
 func (t *Text) Get() string { return t.value.String }
 func (t *Text) Valid() bool { return t.value.Valid }
 
-// Implements the SelectPart interface.
-// This way columns can directly be part of the select statement.
-// And you won't need to wrap it into a Col function call.
-func (t *Text) ApplySelect(stmt *SelectStmt) {
-	stmt.selectClause.AppendColumns(t)
+// Implement SqlWriter interface for conditions
+func (t *Text) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
+	if t.table != nil {
+		prefix := t.table.Name
+		if t.table.Alias != "" {
+			prefix = t.table.Alias
+		}
+		w.Write([]byte(prefix + "."))
+	}
+	w.Write([]byte(t.name))
+	return nil, nil
+}
+
+// Condition methods
+func (t *Text) Eq(value any) query.Condition {
+	return Equal(t, value)
+}
+
+func (t *Text) Neq(value any) query.Condition {
+	return NotEqual(t, value)
+}
+
+func (t *Text) Gt(value any) query.Condition {
+	return GreaterThan(t, value)
+}
+
+func (t *Text) Gte(value any) query.Condition {
+	return GreaterThanOrEqual(t, value)
+}
+
+func (t *Text) Lt(value any) query.Condition {
+	return LessThan(t, value)
+}
+
+func (t *Text) Lte(value any) query.Condition {
+	return LessThanOrEqual(t, value)
+}
+
+func (t *Text) Like(pattern string) query.Condition {
+	return Like(t, pattern)
+}
+
+func (t *Text) In(values ...any) query.Condition {
+	return In(t, values...)
+}
+
+// Implement SelectPart interface
+func (t *Text) ApplySelect(stmt *query.SelectStmt) {
+	stmt.Columns = append(stmt.Columns, t)
 }

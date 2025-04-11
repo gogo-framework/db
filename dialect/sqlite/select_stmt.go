@@ -3,61 +3,106 @@ package sqlite
 import (
 	"bytes"
 	"context"
-	"errors"
+	"fmt"
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
+	"github.com/gogo-framework/db/query"
 )
 
 type SelectPart interface {
-	ApplySelect(*SelectStmt)
+	query.SqlWriter
+	ApplySelect(stmt *SelectStmt)
 }
 
-// https://www.sqlite.org/lang_select.html
 type SelectStmt struct {
-	with         any
-	selectClause SelectClause
-	distinct     bool
-	from         FromClause
-	where        any
-	groupBy      any
-	having       any
-	windows      any
-	orderBy      any
-	limit        any
-	offset       any
+	columns *SelectClause
+	from    *FromClause
+	where   *WhereClause
+	orderBy *OrderByClause
+	limit   *LimitClause
+	offset  *OffsetClause
 }
 
-func Select(parts ...SelectPart) *SelectStmt {
-	stmt := &SelectStmt{}
-	for _, part := range parts {
-		part.ApplySelect(stmt)
+// WriteSql implements the SqlWriter interface
+func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
+	if s.columns == nil || len(s.columns.Columns) == 0 {
+		return nil, fmt.Errorf("no columns selected")
 	}
-	return stmt
-}
 
-// Implement the WriteSql interface
-func (stmt *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	var args []any
+	var qArgs []any
 
+	// Write SELECT
 	w.Write([]byte("SELECT "))
-	stmt.selectClause.WriteSql(ctx, w, d, argPos)
+	args, err := s.columns.WriteSql(ctx, w, d, argPos)
+	if err != nil {
+		return nil, fmt.Errorf("error writing columns: %w", err)
+	}
+	qArgs = append(qArgs, args...)
+	argPos += len(args)
 
-	// From clause
-	if stmt.from.Source != nil {
+	// Write FROM
+	if s.from != nil {
 		w.Write([]byte(" FROM "))
-		stmt.from.WriteSql(ctx, w, d, argPos)
-	} else {
-		return nil, errors.New("FROM clause is required for a SELECT statement")
+		args, err := s.from.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing from: %w", err)
+		}
+		qArgs = append(qArgs, args...)
+		argPos += len(args)
 	}
 
-	return args, nil
+	// Write WHERE
+	if s.where != nil {
+		w.Write([]byte(" WHERE "))
+		args, err := s.where.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing where: %w", err)
+		}
+		qArgs = append(qArgs, args...)
+		argPos += len(args)
+	}
+
+	// Write ORDER BY
+	if s.orderBy != nil {
+		w.Write([]byte(" ORDER BY "))
+		args, err := s.orderBy.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing order by: %w", err)
+		}
+		qArgs = append(qArgs, args...)
+		argPos += len(args)
+	}
+
+	// Write LIMIT
+	if s.limit != nil {
+		w.Write([]byte(" LIMIT "))
+		args, err := s.limit.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing limit: %w", err)
+		}
+		qArgs = append(qArgs, args...)
+		argPos += len(args)
+	}
+
+	// Write OFFSET
+	if s.offset != nil {
+		w.Write([]byte(" OFFSET "))
+		args, err := s.offset.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing offset: %w", err)
+		}
+		qArgs = append(qArgs, args...)
+		argPos += len(args)
+	}
+
+	return qArgs, nil
 }
 
-// implement a tosql function for testing purposes. Will be removed later.
-func (stmt *SelectStmt) ToSql() string {
+// ToSql converts the statement to SQL string with arguments (for testing)
+func (s *SelectStmt) ToSql() (string, []any) {
 	ctx := context.Background()
 	w := &bytes.Buffer{}
-	stmt.WriteSql(ctx, w, nil, 0)
-	return w.String()
+	args, _ := s.WriteSql(ctx, w, nil, 1)
+	return w.String(), args
 }
