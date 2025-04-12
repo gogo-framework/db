@@ -21,7 +21,7 @@ func NewLiteral[T any](value T) *Literal[T] {
 
 // WriteSql implements the SqlWriter interface
 func (l *Literal[T]) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	w.Write([]byte("?"))
+	w.Write([]byte(d.Placeholder(argPos)))
 	return []any{l.val}, nil
 }
 

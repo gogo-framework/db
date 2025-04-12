@@ -31,14 +31,19 @@ func (f *FromClause) AppendJoins(joins ...any) {
 	f.Joins = append(f.Joins, joins...)
 }
 
+// WriteSql writes the FROM clause to the given writer.
 func (f *FromClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
 	var args []any
 
-	if f.Source != nil {
-		if f.Alias != "" {
-			w.Write([]byte(f.Source.Table().Name + " AS " + f.Alias))
-		} else {
-			w.Write([]byte(f.Source.Table().Name))
+	// Write the table name with proper quoting
+	if _, err := w.Write([]byte(d.QuoteIdentifier(f.Source.Table().Name))); err != nil {
+		return nil, err
+	}
+
+	// Write the alias if it exists
+	if f.Alias != "" {
+		if _, err := w.Write([]byte(" AS " + d.QuoteIdentifier(f.Alias))); err != nil {
+			return nil, err
 		}
 	}
 

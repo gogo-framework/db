@@ -78,9 +78,13 @@ func (n *Numeric[T]) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 		if n.table.Alias != "" {
 			prefix = n.table.Alias
 		}
-		w.Write([]byte(prefix + "."))
+		if _, err := w.Write([]byte(d.QuoteIdentifier(prefix) + ".")); err != nil {
+			return nil, err
+		}
 	}
-	w.Write([]byte(n.name))
+	if _, err := w.Write([]byte(d.QuoteIdentifier(n.name))); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 

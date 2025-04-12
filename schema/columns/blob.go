@@ -76,9 +76,13 @@ func (b *Binary[T]) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect
 		if b.table.Alias != "" {
 			prefix = b.table.Alias
 		}
-		w.Write([]byte(prefix + "."))
+		if _, err := w.Write([]byte(d.QuoteIdentifier(prefix) + ".")); err != nil {
+			return nil, err
+		}
 	}
-	w.Write([]byte(b.name))
+	if _, err := w.Write([]byte(d.QuoteIdentifier(b.name))); err != nil {
+		return nil, err
+	}
 	return nil, nil
 }
 

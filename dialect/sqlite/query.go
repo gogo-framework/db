@@ -21,7 +21,9 @@ func (s *SelectClause) ApplySelect(stmt *SelectStmt) {
 
 // Select creates a new SQLite SELECT statement
 func Select(parts ...SelectPart) *SelectStmt {
-	stmt := &SelectStmt{}
+	stmt := &SelectStmt{
+		dialect: &SqliteDialect{},
+	}
 	for _, part := range parts {
 		if part != nil {
 			part.ApplySelect(stmt)
@@ -171,38 +173,39 @@ func OrderBy(columns ...query.SqlWriter) *OrderByClause {
 	}
 }
 
-// LimitClause represents a LIMIT clause in SQLite
-type LimitClause struct {
-	*query.LimitClause
+// LimitOffsetClause represents a LIMIT and OFFSET clause in SQLite
+type LimitOffsetClause struct {
+	*query.LimitOffsetClause
 }
 
-func (l *LimitClause) ApplySelect(stmt *SelectStmt) {
-	stmt.limit = l
+func (l *LimitOffsetClause) ApplySelect(stmt *SelectStmt) {
+	stmt.limitOffset = l.LimitOffsetClause
 }
 
-// Limit creates a LIMIT clause
-func Limit(limit int) *LimitClause {
-	return &LimitClause{
-		LimitClause: &query.LimitClause{
-			Limit: limit,
+// LimitOffset creates a LIMIT and OFFSET clause
+func LimitOffset(limit *int, offset *int) *LimitOffsetClause {
+	return &LimitOffsetClause{
+		LimitOffsetClause: &query.LimitOffsetClause{
+			Limit:  limit,
+			Offset: offset,
 		},
 	}
 }
 
-// OffsetClause represents an OFFSET clause in SQLite
-type OffsetClause struct {
-	*query.OffsetClause
-}
-
-func (o *OffsetClause) ApplySelect(stmt *SelectStmt) {
-	stmt.offset = o
+// Limit creates a LIMIT clause
+func Limit(limit int) *LimitOffsetClause {
+	return &LimitOffsetClause{
+		LimitOffsetClause: &query.LimitOffsetClause{
+			Limit: &limit,
+		},
+	}
 }
 
 // Offset creates an OFFSET clause
-func Offset(offset int) *OffsetClause {
-	return &OffsetClause{
-		OffsetClause: &query.OffsetClause{
-			Offset: offset,
+func Offset(offset int) *LimitOffsetClause {
+	return &LimitOffsetClause{
+		LimitOffsetClause: &query.LimitOffsetClause{
+			Offset: &offset,
 		},
 	}
 }

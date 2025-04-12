@@ -17,14 +17,13 @@ type SelectPart interface {
 // SelectStmt represents a SELECT statement in the query package.
 // This is the base implementation that dialect packages can embed or use as a reference.
 type SelectStmt struct {
-	columns *SelectClause
-	from    *FromClause
-	where   *WhereClause
-	groupBy *GroupByClause
-	having  *HavingClause
-	orderBy *OrderByClause
-	limit   *LimitClause
-	offset  *OffsetClause
+	columns     *SelectClause
+	from        *FromClause
+	where       *WhereClause
+	groupBy     *GroupByClause
+	having      *HavingClause
+	orderBy     *OrderByClause
+	limitOffset *LimitOffsetClause
 }
 
 // WriteSql implements the SqlWriter interface
@@ -99,26 +98,15 @@ func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 		argPos += len(orderByArgs)
 	}
 
-	// Write LIMIT
-	if s.limit != nil {
-		w.Write([]byte(" LIMIT "))
-		limitArgs, err := s.limit.WriteSql(ctx, w, d, argPos)
+	// Write LIMIT and OFFSET
+	if s.limitOffset != nil {
+		w.Write([]byte(" "))
+		limitOffsetArgs, err := s.limitOffset.WriteSql(ctx, w, d, argPos)
 		if err != nil {
-			return nil, fmt.Errorf("error writing limit: %w", err)
+			return nil, fmt.Errorf("error writing limit/offset: %w", err)
 		}
-		args = append(args, limitArgs...)
-		argPos += len(limitArgs)
-	}
-
-	// Write OFFSET
-	if s.offset != nil {
-		w.Write([]byte(" OFFSET "))
-		offsetArgs, err := s.offset.WriteSql(ctx, w, d, argPos)
-		if err != nil {
-			return nil, fmt.Errorf("error writing offset: %w", err)
-		}
-		args = append(args, offsetArgs...)
-		argPos += len(offsetArgs)
+		args = append(args, limitOffsetArgs...)
+		argPos += len(limitOffsetArgs)
 	}
 
 	return args, nil

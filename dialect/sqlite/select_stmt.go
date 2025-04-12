@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
+	"github.com/gogo-framework/db/query"
 )
 
 // SelectPart represents a part of a SELECT statement that can be applied to a SelectStmt
@@ -16,15 +17,15 @@ type SelectPart interface {
 
 // SelectStmt represents a SQLite SELECT statement
 type SelectStmt struct {
-	columns  *SelectClause
-	from     *FromClause
-	where    *WhereClause
-	groupBy  *GroupByClause
-	having   *HavingClause
-	orderBy  *OrderByClause
-	limit    *LimitClause
-	offset   *OffsetClause
-	distinct *DistinctClause
+	dialect     dialect.Dialect
+	columns     *SelectClause
+	from        *FromClause
+	where       *WhereClause
+	groupBy     *GroupByClause
+	having      *HavingClause
+	orderBy     *OrderByClause
+	limitOffset *query.LimitOffsetClause
+	distinct    *DistinctClause
 }
 
 // WriteSql generates the SQL for the SELECT statement
@@ -112,28 +113,16 @@ func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 		args = append(args, orderArgs...)
 	}
 
-	// Write LIMIT
-	if s.limit != nil {
-		if _, err := w.Write([]byte(" LIMIT ")); err != nil {
-			return nil, fmt.Errorf("error writing LIMIT: %w", err)
+	// Write LIMIT and OFFSET
+	if s.limitOffset != nil {
+		if _, err := w.Write([]byte(" ")); err != nil {
+			return nil, fmt.Errorf("error writing LIMIT/OFFSET: %w", err)
 		}
-		limitArgs, err := s.limit.WriteSql(ctx, w, d, argPos+len(args))
+		limitOffsetArgs, err := s.limitOffset.WriteSql(ctx, w, d, argPos+len(args))
 		if err != nil {
-			return nil, fmt.Errorf("error writing LIMIT clause: %w", err)
+			return nil, fmt.Errorf("error writing LIMIT/OFFSET clause: %w", err)
 		}
-		args = append(args, limitArgs...)
-	}
-
-	// Write OFFSET
-	if s.offset != nil {
-		if _, err := w.Write([]byte(" OFFSET ")); err != nil {
-			return nil, fmt.Errorf("error writing OFFSET: %w", err)
-		}
-		offsetArgs, err := s.offset.WriteSql(ctx, w, d, argPos+len(args))
-		if err != nil {
-			return nil, fmt.Errorf("error writing OFFSET clause: %w", err)
-		}
-		args = append(args, offsetArgs...)
+		args = append(args, limitOffsetArgs...)
 	}
 
 	return args, nil
@@ -143,6 +132,6 @@ func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 func (s *SelectStmt) ToSql() (string, []any) {
 	ctx := context.Background()
 	w := &bytes.Buffer{}
-	args, _ := s.WriteSql(ctx, w, nil, 1)
+	args, _ := s.WriteSql(ctx, w, s.dialect, 1)
 	return w.String(), args
 }
