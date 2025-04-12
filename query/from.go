@@ -15,6 +15,10 @@ type FromClause struct {
 	Joins  []any // We have no type yet for joins.
 }
 
+func (f *FromClause) ApplySelect(stmt *SelectStmt) {
+	stmt.from = f
+}
+
 func (f *FromClause) As(alias string) {
 	f.Alias = alias
 	if f.Source != nil {

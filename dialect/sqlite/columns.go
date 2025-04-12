@@ -83,6 +83,11 @@ func (t *Text) In(values ...any) query.Condition {
 }
 
 // Implement SelectPart interface
-func (t *Text) ApplySelect(stmt *query.SelectStmt) {
-	stmt.Columns = append(stmt.Columns, t)
+func (t *Text) ApplySelect(stmt *SelectStmt) {
+	if stmt.columns == nil {
+		stmt.columns = &SelectClause{
+			SelectClause: &query.SelectClause{},
+		}
+	}
+	stmt.columns.Columns = append(stmt.columns.Columns, t)
 }

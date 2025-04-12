@@ -7,26 +7,17 @@ import (
 	"github.com/gogo-framework/db/dialect"
 )
 
-type WherePart interface {
-	ApplyWhere(*SelectStmt)
-}
-
 type WhereClause struct {
 	Conditions []Condition
 }
 
-// ApplyWhere implements the WherePart interface
-func (w WhereClause) ApplyWhere(stmt *SelectStmt) {
-	stmt.where = w
-}
-
 // ApplySelect implements the SelectPart interface
-func (w WhereClause) ApplySelect(stmt *SelectStmt) {
+func (w *WhereClause) ApplySelect(stmt *SelectStmt) {
 	stmt.where = w
 }
 
 // WriteSql implements the SqlWriter interface
-func (w WhereClause) WriteSql(ctx context.Context, writer io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
+func (w *WhereClause) WriteSql(ctx context.Context, writer io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
 	if len(w.Conditions) == 0 {
 		return nil, nil
 	}
@@ -49,12 +40,12 @@ func (w WhereClause) WriteSql(ctx context.Context, writer io.Writer, d dialect.D
 }
 
 // Where creates a new WHERE clause with the given conditions
-func Where(conditions ...Condition) WhereClause {
-	return WhereClause{Conditions: conditions}
+func Where(conditions ...Condition) SelectPart {
+	return &WhereClause{Conditions: conditions}
 }
 
 // And adds additional conditions to an existing WHERE clause
-func (w WhereClause) And(conditions ...Condition) WhereClause {
+func (w *WhereClause) And(conditions ...Condition) *WhereClause {
 	w.Conditions = append(w.Conditions, conditions...)
 	return w
 }

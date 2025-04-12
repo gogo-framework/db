@@ -10,54 +10,23 @@ import (
 	"github.com/gogo-framework/db/schema"
 )
 
-// SelectClause represents a SELECT clause
+// SelectClause represents a SELECT clause in SQLite
 type SelectClause struct {
-	Columns []query.SqlWriter
+	*query.SelectClause
 }
 
 func (s *SelectClause) ApplySelect(stmt *SelectStmt) {
 	stmt.columns = s
 }
 
-func (s *SelectClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	if len(s.Columns) == 0 {
-		return nil, fmt.Errorf("no columns selected")
-	}
-
-	var allArgs []any
-	for i, col := range s.Columns {
-		if i > 0 {
-			w.Write([]byte(", "))
-		}
-		args, err := col.WriteSql(ctx, w, d, argPos)
-		if err != nil {
-			return nil, fmt.Errorf("error writing column: %w", err)
-		}
-		allArgs = append(allArgs, args...)
-		argPos += len(args)
-	}
-	return allArgs, nil
-}
-
 // Select creates a new SQLite SELECT statement
-func Select(parts ...query.SqlWriter) *SelectStmt {
+func Select(parts ...SelectPart) *SelectStmt {
 	stmt := &SelectStmt{}
-	var columns []query.SqlWriter
-
 	for _, part := range parts {
-		if selectPart, ok := part.(SelectPart); ok {
-			selectPart.ApplySelect(stmt)
-		} else if part != nil {
-			columns = append(columns, part)
+		if part != nil {
+			part.ApplySelect(stmt)
 		}
 	}
-
-	if len(columns) > 0 {
-		stmt.columns = &SelectClause{
-			Columns: columns,
-		}
-	}
-
 	return stmt
 }
 
@@ -92,7 +61,7 @@ func (f *FromClause) WriteSql(ctx context.Context, writer io.Writer, d dialect.D
 	return f.FromClause.WriteSql(ctx, writer, d, argPos)
 }
 
-func (f *FromClause) As(alias string) *FromClause {
+func (f *FromClause) As(alias string) SelectPart {
 	f.FromClause.As(alias)
 	return f
 }
@@ -131,12 +100,8 @@ func (w *WhereClause) ApplySelect(stmt *SelectStmt) {
 	stmt.where = w
 }
 
-func (w *WhereClause) WriteSql(ctx context.Context, writer io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	return w.WhereClause.WriteSql(ctx, writer, d, argPos)
-}
-
 // Where creates a WHERE clause
-func Where(conditions ...query.Condition) SelectPart {
+func Where(conditions ...query.Condition) *WhereClause {
 	return &WhereClause{
 		WhereClause: &query.WhereClause{
 			Conditions: conditions,
@@ -144,82 +109,10 @@ func Where(conditions ...query.Condition) SelectPart {
 	}
 }
 
-// OrderByClause represents an ORDER BY clause
-type OrderByClause struct {
-	Columns []query.SqlWriter
-}
-
-func (o *OrderByClause) ApplySelect(stmt *SelectStmt) {
-	stmt.orderBy = o
-}
-
-func (o *OrderByClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	if len(o.Columns) == 0 {
-		return nil, nil
-	}
-
-	var allArgs []any
-	for i, col := range o.Columns {
-		if i > 0 {
-			w.Write([]byte(", "))
-		}
-		args, err := col.WriteSql(ctx, w, d, argPos)
-		if err != nil {
-			return nil, err
-		}
-		allArgs = append(allArgs, args...)
-		argPos += len(args)
-	}
-	return allArgs, nil
-}
-
-// OrderBy creates an ORDER BY clause
-func OrderBy(columns ...query.SqlWriter) SelectPart {
-	return &OrderByClause{
-		Columns: columns,
-	}
-}
-
-// LimitClause represents a LIMIT clause
-type LimitClause struct {
-	Limit int
-}
-
-func (l *LimitClause) ApplySelect(stmt *SelectStmt) {
-	stmt.limit = l
-}
-
-func (l *LimitClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	w.Write([]byte(fmt.Sprintf("%d", l.Limit)))
-	return nil, nil
-}
-
-// Limit creates a LIMIT clause
-func Limit(limit int) SelectPart {
-	return &LimitClause{
-		Limit: limit,
-	}
-}
-
-// OffsetClause represents an OFFSET clause
-type OffsetClause struct {
-	Offset int
-}
-
-func (o *OffsetClause) ApplySelect(stmt *SelectStmt) {
-	stmt.offset = o
-}
-
-func (o *OffsetClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	w.Write([]byte(fmt.Sprintf("%d", o.Offset)))
-	return nil, nil
-}
-
-// Offset creates an OFFSET clause
-func Offset(offset int) SelectPart {
-	return &OffsetClause{
-		Offset: offset,
-	}
+// And adds additional conditions to an existing WHERE clause
+func (w *WhereClause) And(conditions ...query.Condition) *WhereClause {
+	w.Conditions = append(w.Conditions, conditions...)
+	return w
 }
 
 // Or creates an OR condition
@@ -258,4 +151,58 @@ func Like(column schema.Column, pattern string) query.Condition {
 
 func In[T any](column schema.Column, values ...T) query.Condition {
 	return query.In(column, values...)
+}
+
+// OrderByClause represents an ORDER BY clause in SQLite
+type OrderByClause struct {
+	*query.OrderByClause
+}
+
+func (o *OrderByClause) ApplySelect(stmt *SelectStmt) {
+	stmt.orderBy = o
+}
+
+// OrderBy creates an ORDER BY clause
+func OrderBy(columns ...query.SqlWriter) *OrderByClause {
+	return &OrderByClause{
+		OrderByClause: &query.OrderByClause{
+			Columns: columns,
+		},
+	}
+}
+
+// LimitClause represents a LIMIT clause in SQLite
+type LimitClause struct {
+	*query.LimitClause
+}
+
+func (l *LimitClause) ApplySelect(stmt *SelectStmt) {
+	stmt.limit = l
+}
+
+// Limit creates a LIMIT clause
+func Limit(limit int) *LimitClause {
+	return &LimitClause{
+		LimitClause: &query.LimitClause{
+			Limit: limit,
+		},
+	}
+}
+
+// OffsetClause represents an OFFSET clause in SQLite
+type OffsetClause struct {
+	*query.OffsetClause
+}
+
+func (o *OffsetClause) ApplySelect(stmt *SelectStmt) {
+	stmt.offset = o
+}
+
+// Offset creates an OFFSET clause
+func Offset(offset int) *OffsetClause {
+	return &OffsetClause{
+		OffsetClause: &query.OffsetClause{
+			Offset: offset,
+		},
+	}
 }
