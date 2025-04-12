@@ -206,3 +206,55 @@ func Offset(offset int) *OffsetClause {
 		},
 	}
 }
+
+// DistinctClause represents a DISTINCT clause in SQLite
+type DistinctClause struct {
+	*query.DistinctClause
+}
+
+func (d *DistinctClause) ApplySelect(stmt *SelectStmt) {
+	stmt.distinct = d
+}
+
+// Distinct creates a DISTINCT clause
+func Distinct() *DistinctClause {
+	return &DistinctClause{
+		DistinctClause: &query.DistinctClause{},
+	}
+}
+
+// GroupByClause represents a GROUP BY clause in SQLite
+type GroupByClause struct {
+	*query.GroupByClause
+}
+
+func (g *GroupByClause) ApplySelect(stmt *SelectStmt) {
+	stmt.groupBy = g
+}
+
+// GroupBy creates a GROUP BY clause
+func GroupBy(columns ...query.SqlWriter) *GroupByClause {
+	return &GroupByClause{
+		GroupByClause: &query.GroupByClause{
+			Columns: columns,
+		},
+	}
+}
+
+// HavingClause represents a HAVING clause in SQLite
+type HavingClause struct {
+	*query.HavingClause
+}
+
+func (h *HavingClause) ApplySelect(stmt *SelectStmt) {
+	stmt.having = h
+}
+
+// Having creates a HAVING clause
+func Having(conditions ...query.Condition) *HavingClause {
+	return &HavingClause{
+		HavingClause: &query.HavingClause{
+			Conditions: conditions,
+		},
+	}
+}

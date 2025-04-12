@@ -20,6 +20,8 @@ type SelectStmt struct {
 	columns *SelectClause
 	from    *FromClause
 	where   *WhereClause
+	groupBy *GroupByClause
+	having  *HavingClause
 	orderBy *OrderByClause
 	limit   *LimitClause
 	offset  *OffsetClause
@@ -62,6 +64,28 @@ func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 		}
 		args = append(args, whereArgs...)
 		argPos += len(whereArgs)
+	}
+
+	// Write GROUP BY
+	if s.groupBy != nil {
+		w.Write([]byte(" GROUP BY "))
+		groupByArgs, err := s.groupBy.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing group by: %w", err)
+		}
+		args = append(args, groupByArgs...)
+		argPos += len(groupByArgs)
+	}
+
+	// Write HAVING
+	if s.having != nil {
+		w.Write([]byte(" HAVING "))
+		havingArgs, err := s.having.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing having: %w", err)
+		}
+		args = append(args, havingArgs...)
+		argPos += len(havingArgs)
 	}
 
 	// Write ORDER BY

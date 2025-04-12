@@ -7,7 +7,6 @@ import (
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
-	"github.com/gogo-framework/db/query"
 )
 
 // SelectPart represents a part of a SELECT statement that can be applied to a SelectStmt
@@ -17,13 +16,15 @@ type SelectPart interface {
 
 // SelectStmt represents a SQLite SELECT statement
 type SelectStmt struct {
-	*query.SelectStmt
-	columns *SelectClause
-	from    *FromClause
-	where   *WhereClause
-	orderBy *OrderByClause
-	limit   *LimitClause
-	offset  *OffsetClause
+	columns  *SelectClause
+	from     *FromClause
+	where    *WhereClause
+	groupBy  *GroupByClause
+	having   *HavingClause
+	orderBy  *OrderByClause
+	limit    *LimitClause
+	offset   *OffsetClause
+	distinct *DistinctClause
 }
 
 // WriteSql generates the SQL for the SELECT statement
@@ -32,8 +33,15 @@ func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 
 	// Write SELECT
 	w.Write([]byte("SELECT "))
+	if s.distinct != nil {
+		distinctArgs, err := s.distinct.WriteSql(ctx, w, d, argPos)
+		if err != nil {
+			return nil, fmt.Errorf("error writing DISTINCT: %w", err)
+		}
+		args = append(args, distinctArgs...)
+	}
 	if s.columns != nil {
-		columnArgs, err := s.columns.WriteSql(ctx, w, d, argPos)
+		columnArgs, err := s.columns.WriteSql(ctx, w, d, argPos+len(args))
 		if err != nil {
 			return nil, fmt.Errorf("error writing SELECT: %w", err)
 		}
@@ -66,6 +74,30 @@ func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 			return nil, fmt.Errorf("error writing WHERE clause: %w", err)
 		}
 		args = append(args, whereArgs...)
+	}
+
+	// Write GROUP BY
+	if s.groupBy != nil {
+		if _, err := w.Write([]byte(" GROUP BY ")); err != nil {
+			return nil, fmt.Errorf("error writing GROUP BY: %w", err)
+		}
+		groupByArgs, err := s.groupBy.WriteSql(ctx, w, d, argPos+len(args))
+		if err != nil {
+			return nil, fmt.Errorf("error writing GROUP BY clause: %w", err)
+		}
+		args = append(args, groupByArgs...)
+	}
+
+	// Write HAVING
+	if s.having != nil {
+		if _, err := w.Write([]byte(" HAVING ")); err != nil {
+			return nil, fmt.Errorf("error writing HAVING: %w", err)
+		}
+		havingArgs, err := s.having.WriteSql(ctx, w, d, argPos+len(args))
+		if err != nil {
+			return nil, fmt.Errorf("error writing HAVING clause: %w", err)
+		}
+		args = append(args, havingArgs...)
 	}
 
 	// Write ORDER BY
@@ -113,34 +145,4 @@ func (s *SelectStmt) ToSql() (string, []any) {
 	w := &bytes.Buffer{}
 	args, _ := s.WriteSql(ctx, w, nil, 1)
 	return w.String(), args
-}
-
-// OrderBy adds an ORDER BY clause to the statement
-func (s *SelectStmt) OrderBy(columns ...query.SqlWriter) *SelectStmt {
-	s.orderBy = &OrderByClause{
-		OrderByClause: &query.OrderByClause{
-			Columns: columns,
-		},
-	}
-	return s
-}
-
-// Limit adds a LIMIT clause to the statement
-func (s *SelectStmt) Limit(limit int) *SelectStmt {
-	s.limit = &LimitClause{
-		LimitClause: &query.LimitClause{
-			Limit: limit,
-		},
-	}
-	return s
-}
-
-// Offset adds an OFFSET clause to the statement
-func (s *SelectStmt) Offset(offset int) *SelectStmt {
-	s.offset = &OffsetClause{
-		OffsetClause: &query.OffsetClause{
-			Offset: offset,
-		},
-	}
-	return s
 }
