@@ -1,88 +1,21 @@
 package sqlite
 
 import (
-	"context"
-	"database/sql"
-	"database/sql/driver"
-	"io"
-
-	"github.com/gogo-framework/db/dialect"
 	"github.com/gogo-framework/db/query"
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/schema/columns"
 )
 
-type Column[T any] struct {
-	table *schema.Table
-	name  string
-	value T
-}
-
+// Text represents a SQLite TEXT column
 type Text struct {
-	Column[sql.NullString]
+	columns.Text[string]
 }
 
-// Implement Column interface
-func (t *Text) GetTable() *schema.Table      { return t.table }
-func (t *Text) SetTable(table *schema.Table) { t.table = table }
-func (t *Text) GetName() string              { return t.name }
-func (t *Text) SetName(name string)          { t.name = name }
-func (t *Text) GetType() string              { return "TEXT" }
-
-// Implement sql.Scanner and driver.Valuer interfaces
-func (t *Text) Scan(value any) error         { return t.value.Scan(value) }
-func (t *Text) Value() (driver.Value, error) { return t.value.Value() }
-
-// Value accessors
-func (t *Text) Get() string { return t.value.String }
-func (t *Text) Valid() bool { return t.value.Valid }
-
-// Implement SqlWriter interface for conditions
-func (t *Text) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	if t.table != nil {
-		prefix := t.table.Name
-		if t.table.Alias != "" {
-			prefix = t.table.Alias
-		}
-		w.Write([]byte(prefix + "."))
-	}
-	w.Write([]byte(t.name))
-	return nil, nil
+// GetType returns the SQL type for this column
+func (t *Text) GetType() string {
+	return "TEXT"
 }
 
-// Condition methods
-func (t *Text) Eq(value any) query.Condition {
-	return Equal(t, value)
-}
-
-func (t *Text) Neq(value any) query.Condition {
-	return NotEqual(t, value)
-}
-
-func (t *Text) Gt(value any) query.Condition {
-	return GreaterThan(t, value)
-}
-
-func (t *Text) Gte(value any) query.Condition {
-	return GreaterThanOrEqual(t, value)
-}
-
-func (t *Text) Lt(value any) query.Condition {
-	return LessThan(t, value)
-}
-
-func (t *Text) Lte(value any) query.Condition {
-	return LessThanOrEqual(t, value)
-}
-
-func (t *Text) Like(pattern string) query.Condition {
-	return Like(t, pattern)
-}
-
-func (t *Text) In(values ...any) query.Condition {
-	return In(t, values...)
-}
-
-// Implement SelectPart interface
+// ApplySelect implements the SelectPart interface
 func (t *Text) ApplySelect(stmt *SelectStmt) {
 	if stmt.columns == nil {
 		stmt.columns = &SelectClause{
@@ -90,4 +23,64 @@ func (t *Text) ApplySelect(stmt *SelectStmt) {
 		}
 	}
 	stmt.columns.Columns = append(stmt.columns.Columns, t)
+}
+
+// Integer represents a SQLite INTEGER column
+type Integer struct {
+	columns.Numeric[int64]
+}
+
+// GetType returns the SQL type for this column
+func (i *Integer) GetType() string {
+	return "INTEGER"
+}
+
+// ApplySelect implements the SelectPart interface
+func (i *Integer) ApplySelect(stmt *SelectStmt) {
+	if stmt.columns == nil {
+		stmt.columns = &SelectClause{
+			SelectClause: &query.SelectClause{},
+		}
+	}
+	stmt.columns.Columns = append(stmt.columns.Columns, i)
+}
+
+// Float represents a SQLite REAL column
+type Float struct {
+	columns.Numeric[float64]
+}
+
+// GetType returns the SQL type for this column
+func (f *Float) GetType() string {
+	return "REAL"
+}
+
+// ApplySelect implements the SelectPart interface
+func (f *Float) ApplySelect(stmt *SelectStmt) {
+	if stmt.columns == nil {
+		stmt.columns = &SelectClause{
+			SelectClause: &query.SelectClause{},
+		}
+	}
+	stmt.columns.Columns = append(stmt.columns.Columns, f)
+}
+
+// Blob represents a SQLite BLOB column
+type Blob struct {
+	columns.Binary[[]byte]
+}
+
+// GetType returns the SQL type for this column
+func (b *Blob) GetType() string {
+	return "BLOB"
+}
+
+// ApplySelect implements the SelectPart interface
+func (b *Blob) ApplySelect(stmt *SelectStmt) {
+	if stmt.columns == nil {
+		stmt.columns = &SelectClause{
+			SelectClause: &query.SelectClause{},
+		}
+	}
+	stmt.columns.Columns = append(stmt.columns.Columns, b)
 }

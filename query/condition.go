@@ -119,6 +119,91 @@ func (c *InCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Diale
 	return args, nil
 }
 
+// NotLikeCondition represents a NOT LIKE clause
+type NotLikeCondition struct {
+	Column  SqlWriter
+	Pattern SqlWriter
+}
+
+func (c *NotLikeCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
+	var args []any
+
+	columnArgs, err := c.Column.WriteSql(ctx, w, d, argPos)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, columnArgs...)
+
+	w.Write([]byte(" NOT LIKE "))
+
+	patternArgs, err := c.Pattern.WriteSql(ctx, w, d, argPos+len(args))
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, patternArgs...)
+
+	return args, nil
+}
+
+// NotInCondition represents a NOT IN clause
+type NotInCondition struct {
+	Column SqlWriter
+	Values []SqlWriter
+}
+
+func (c *NotInCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
+	var args []any
+
+	columnArgs, err := c.Column.WriteSql(ctx, w, d, argPos)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, columnArgs...)
+
+	w.Write([]byte(" NOT IN ("))
+	for i, value := range c.Values {
+		valueArgs, err := value.WriteSql(ctx, w, d, argPos+len(args))
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, valueArgs...)
+		if i < len(c.Values)-1 {
+			w.Write([]byte(", "))
+		}
+	}
+	w.Write([]byte(")"))
+
+	return args, nil
+}
+
+// IsNullCondition represents an IS NULL clause
+type IsNullCondition struct {
+	Column SqlWriter
+}
+
+func (c *IsNullCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
+	args, err := c.Column.WriteSql(ctx, w, d, argPos)
+	if err != nil {
+		return nil, err
+	}
+	w.Write([]byte(" IS NULL"))
+	return args, nil
+}
+
+// IsNotNullCondition represents an IS NOT NULL clause
+type IsNotNullCondition struct {
+	Column SqlWriter
+}
+
+func (c *IsNotNullCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
+	args, err := c.Column.WriteSql(ctx, w, d, argPos)
+	if err != nil {
+		return nil, err
+	}
+	w.Write([]byte(" IS NOT NULL"))
+	return args, nil
+}
+
 // Condition builder functions
 func Eq[T any](column SqlWriter, value T) Condition {
 	return &BinaryCondition{
@@ -184,5 +269,39 @@ func In[T any](column SqlWriter, values ...T) Condition {
 	return &InCondition{
 		Column: column,
 		Values: literals,
+	}
+}
+
+// NotLike creates a NOT LIKE condition
+func NotLike(column SqlWriter, pattern string) Condition {
+	return &NotLikeCondition{
+		Column:  column,
+		Pattern: NewLiteral(pattern),
+	}
+}
+
+// NotIn creates a NOT IN condition
+func NotIn[T any](column SqlWriter, values ...T) Condition {
+	literals := make([]SqlWriter, len(values))
+	for i, v := range values {
+		literals[i] = NewLiteral(v)
+	}
+	return &NotInCondition{
+		Column: column,
+		Values: literals,
+	}
+}
+
+// IsNull creates an IS NULL condition
+func IsNull(column SqlWriter) Condition {
+	return &IsNullCondition{
+		Column: column,
+	}
+}
+
+// IsNotNull creates an IS NOT NULL condition
+func IsNotNull(column SqlWriter) Condition {
+	return &IsNotNullCondition{
+		Column: column,
 	}
 }
