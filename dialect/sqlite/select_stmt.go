@@ -17,15 +17,16 @@ type SelectPart interface {
 
 // SelectStmt represents a SQLite SELECT statement
 type SelectStmt struct {
+	// can be removed later, right now it's used in the toSql method but this is only for testing
 	dialect     dialect.Dialect
 	columns     *SelectClause
+	distinct    *DistinctClause
 	from        *FromClause
 	where       *WhereClause
 	groupBy     *GroupByClause
 	having      *HavingClause
 	orderBy     *OrderByClause
 	limitOffset *query.LimitOffsetClause
-	distinct    *DistinctClause
 }
 
 // WriteSql generates the SQL for the SELECT statement
