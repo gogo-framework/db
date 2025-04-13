@@ -12,12 +12,12 @@ type Aggregation struct {
 
 // ApplySelect implements the SelectPart interface
 func (a *Aggregation) ApplySelect(stmt *SelectStmt) {
-	if stmt.columns == nil {
-		stmt.columns = &SelectClause{
+	if stmt.Columns == nil {
+		stmt.Columns = &SelectClause{
 			SelectClause: &query.SelectClause{},
 		}
 	}
-	stmt.columns.Columns = append(stmt.columns.Columns, a.Aggregation)
+	stmt.Columns.Columns = append(stmt.Columns.Columns, a.Aggregation)
 }
 
 // As creates an alias for the aggregation

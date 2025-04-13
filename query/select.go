@@ -6,11 +6,12 @@ import (
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
+	"github.com/gogo-framework/db/schema"
 )
 
 // SelectClause represents a SELECT clause
 type SelectClause struct {
-	Columns []SqlWriter
+	Columns []schema.Column
 }
 
 func (s *SelectClause) ApplySelect(stmt *SelectStmt) {
@@ -38,7 +39,7 @@ func (s *SelectClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dial
 }
 
 // NewSelectClause creates a new SELECT clause
-func NewSelectClause(columns ...SqlWriter) *SelectClause {
+func NewSelectClause(columns ...schema.Column) *SelectClause {
 	return &SelectClause{
 		Columns: columns,
 	}

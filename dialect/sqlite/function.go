@@ -12,12 +12,12 @@ type Function struct {
 
 // ApplySelect implements the SelectPart interface
 func (f *Function) ApplySelect(stmt *SelectStmt) {
-	if stmt.columns == nil {
-		stmt.columns = &SelectClause{
+	if stmt.Columns == nil {
+		stmt.Columns = &SelectClause{
 			SelectClause: &query.SelectClause{},
 		}
 	}
-	stmt.columns.Columns = append(stmt.columns.Columns, f.Function)
+	stmt.Columns.Columns = append(stmt.Columns.Columns, f.Function)
 }
 
 // String functions
@@ -44,14 +44,14 @@ func Trim(column schema.Column, resultPtr *Text) *Function {
 }
 
 // Substr creates a SUBSTR function for SQLite
-func Substr(column schema.Column, start, length schema.Column, resultPtr *Text) *Function {
+func Substr(column schema.Column, start, length int, resultPtr *Text) *Function {
 	return &Function{
 		Function: query.Substr(column, start, length, resultPtr),
 	}
 }
 
 // Instr creates an INSTR function for SQLite
-func Instr(haystack, needle schema.Column, resultPtr *Text) *Function {
+func Instr(haystack schema.Column, needle string, resultPtr *Text) *Function {
 	return &Function{
 		Function: query.Instr(haystack, needle, resultPtr),
 	}
@@ -79,7 +79,7 @@ func Length(column schema.Column, resultPtr *Integer) *Function {
 }
 
 // Replace creates a REPLACE function for SQLite
-func Replace(column, search, replace schema.Column, resultPtr *Text) *Function {
+func Replace(column schema.Column, search, replace string, resultPtr *Text) *Function {
 	return &Function{
 		Function: query.Replace(column, search, replace, resultPtr),
 	}
@@ -95,7 +95,7 @@ func Abs(column schema.Column, resultPtr *Float) *Function {
 }
 
 // Round creates a ROUND function for SQLite
-func Round(column schema.Column, decimals schema.Column, resultPtr *Float) *Function {
+func Round(column schema.Column, decimals int, resultPtr *Float) *Function {
 	return &Function{
 		Function: query.Round(column, decimals, resultPtr),
 	}
@@ -116,7 +116,7 @@ func Floor(column schema.Column, resultPtr *Float) *Function {
 }
 
 // Mod creates a MOD function for SQLite
-func Mod(dividend, divisor schema.Column, resultPtr *Float) *Function {
+func Mod(dividend schema.Column, divisor any, resultPtr *Float) *Function {
 	return &Function{
 		Function: query.Mod(dividend, divisor, resultPtr),
 	}
@@ -160,7 +160,7 @@ func JulianDay(column schema.Column, resultPtr *Float) *Function {
 }
 
 // Strftime creates a STRFTIME function for SQLite
-func Strftime(format, column schema.Column, resultPtr *Text) *Function {
+func Strftime(format string, column schema.Column, resultPtr *Text) *Function {
 	return &Function{
 		Function: query.Strftime(format, column, resultPtr),
 	}
@@ -185,7 +185,7 @@ func Typeof(column schema.Column, resultPtr *Text) *Function {
 // JSON functions
 
 // JsonExtract creates a JSON_EXTRACT function for SQLite
-func JsonExtract(column, path schema.Column, resultPtr *Text) *Function {
+func JsonExtract(column schema.Column, path string, resultPtr *Text) *Function {
 	return &Function{
 		Function: query.JsonExtract(column, path, resultPtr),
 	}

@@ -19,7 +19,7 @@ type SelectPart interface {
 type SelectStmt struct {
 	// can be removed later, right now it's used in the toSql method but this is only for testing
 	dialect     dialect.Dialect
-	columns     *SelectClause
+	Columns     *SelectClause
 	distinct    *DistinctClause
 	from        *FromClause
 	where       *WhereClause
@@ -42,8 +42,8 @@ func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialec
 		}
 		args = append(args, distinctArgs...)
 	}
-	if s.columns != nil {
-		columnArgs, err := s.columns.WriteSql(ctx, w, d, argPos+len(args))
+	if s.Columns != nil {
+		columnArgs, err := s.Columns.WriteSql(ctx, w, d, argPos+len(args))
 		if err != nil {
 			return nil, fmt.Errorf("error writing SELECT: %w", err)
 		}

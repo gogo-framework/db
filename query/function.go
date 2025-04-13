@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"io"
 
@@ -13,7 +14,66 @@ import (
 type Function struct {
 	Name      string
 	Arguments []schema.Column
+	Args      []any
 	Result    schema.Column
+	table     *schema.Table
+	name      string
+}
+
+// GetTable returns the table this column belongs to
+func (f *Function) GetTable() *schema.Table {
+	return f.table
+}
+
+// SetTable sets the table this column belongs to
+func (f *Function) SetTable(table *schema.Table) {
+	f.table = table
+}
+
+// GetName returns the name of this column
+func (f *Function) GetName() string {
+	if f.Result != nil {
+		return f.Result.GetName()
+	}
+	return f.name
+}
+
+// SetName sets the name of this column
+func (f *Function) SetName(name string) {
+	f.name = name
+}
+
+// GetType returns the SQL type of this column
+func (f *Function) GetType() string {
+	if f.Result != nil {
+		return f.Result.GetType()
+	}
+	if len(f.Arguments) > 0 {
+		return f.Arguments[0].GetType()
+	}
+	return ""
+}
+
+// Scan implements the sql.Scanner interface
+func (f *Function) Scan(value any) error {
+	if f.Result != nil {
+		return f.Result.Scan(value)
+	}
+	if len(f.Arguments) > 0 {
+		return f.Arguments[0].Scan(value)
+	}
+	return nil
+}
+
+// Value implements the driver.Valuer interface
+func (f *Function) Value() (driver.Value, error) {
+	if f.Result != nil {
+		return f.Result.Value()
+	}
+	if len(f.Arguments) > 0 {
+		return f.Arguments[0].Value()
+	}
+	return nil, nil
 }
 
 // WriteSql implements the SqlWriter interface
@@ -33,6 +93,15 @@ func (f *Function) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect,
 			return nil, fmt.Errorf("error writing function argument: %w", err)
 		}
 		allArgs = append(allArgs, args...)
+	}
+
+	// Write additional arguments if any
+	for i, arg := range f.Args {
+		if len(f.Arguments) > 0 || i > 0 {
+			w.Write([]byte(", "))
+		}
+		w.Write([]byte("?"))
+		allArgs = append(allArgs, arg)
 	}
 
 	// Write closing parenthesis
@@ -77,10 +146,11 @@ func Trim(column schema.Column, resultPtr schema.Column) *Function {
 }
 
 // Substr creates a SUBSTR function
-func Substr(column schema.Column, start, length schema.Column, resultPtr schema.Column) *Function {
+func Substr(column schema.Column, start, length int, resultPtr schema.Column) *Function {
 	return &Function{
 		Name:      "SUBSTR",
-		Arguments: []schema.Column{column, start, length},
+		Arguments: []schema.Column{column},
+		Args:      []any{start, length},
 		Result:    resultPtr,
 	}
 }
@@ -97,10 +167,11 @@ func Abs(column schema.Column, resultPtr schema.Column) *Function {
 }
 
 // Round creates a ROUND function
-func Round(column schema.Column, decimals schema.Column, resultPtr schema.Column) *Function {
+func Round(column schema.Column, decimals int, resultPtr schema.Column) *Function {
 	return &Function{
 		Name:      "ROUND",
-		Arguments: []schema.Column{column, decimals},
+		Arguments: []schema.Column{column},
+		Args:      []any{decimals},
 		Result:    resultPtr,
 	}
 }
@@ -137,10 +208,11 @@ func Datetime(column schema.Column, resultPtr schema.Column) *Function {
 // Additional string functions
 
 // Instr creates an INSTR function
-func Instr(haystack, needle schema.Column, resultPtr schema.Column) *Function {
+func Instr(haystack schema.Column, needle string, resultPtr schema.Column) *Function {
 	return &Function{
 		Name:      "INSTR",
-		Arguments: []schema.Column{haystack, needle},
+		Arguments: []schema.Column{haystack},
+		Args:      []any{needle},
 		Result:    resultPtr,
 	}
 }
@@ -184,10 +256,18 @@ func Floor(column schema.Column, resultPtr schema.Column) *Function {
 }
 
 // Mod creates a MOD function
-func Mod(dividend, divisor schema.Column, resultPtr schema.Column) *Function {
+func Mod(dividend schema.Column, divisor any, resultPtr schema.Column) *Function {
+	if col, ok := divisor.(schema.Column); ok {
+		return &Function{
+			Name:      "MOD",
+			Arguments: []schema.Column{dividend, col},
+			Result:    resultPtr,
+		}
+	}
 	return &Function{
 		Name:      "MOD",
-		Arguments: []schema.Column{dividend, divisor},
+		Arguments: []schema.Column{dividend},
+		Args:      []any{divisor},
 		Result:    resultPtr,
 	}
 }
@@ -204,10 +284,11 @@ func JulianDay(column schema.Column, resultPtr schema.Column) *Function {
 }
 
 // Strftime creates a STRFTIME function
-func Strftime(format, column schema.Column, resultPtr schema.Column) *Function {
+func Strftime(format string, column schema.Column, resultPtr schema.Column) *Function {
 	return &Function{
 		Name:      "STRFTIME",
-		Arguments: []schema.Column{format, column},
+		Arguments: []schema.Column{column},
+		Args:      []any{format},
 		Result:    resultPtr,
 	}
 }
@@ -219,6 +300,7 @@ func Cast(column schema.Column, typeName string, resultPtr schema.Column) *Funct
 	return &Function{
 		Name:      "CAST",
 		Arguments: []schema.Column{column},
+		Args:      []any{typeName},
 		Result:    resultPtr,
 	}
 }
@@ -235,10 +317,11 @@ func Typeof(column schema.Column, resultPtr schema.Column) *Function {
 // JSON functions
 
 // JsonExtract creates a JSON_EXTRACT function
-func JsonExtract(column, path schema.Column, resultPtr schema.Column) *Function {
+func JsonExtract(column schema.Column, path string, resultPtr schema.Column) *Function {
 	return &Function{
 		Name:      "JSON_EXTRACT",
-		Arguments: []schema.Column{column, path},
+		Arguments: []schema.Column{column},
+		Args:      []any{path},
 		Result:    resultPtr,
 	}
 }
@@ -309,10 +392,11 @@ func Length(column schema.Column, resultPtr schema.Column) *Function {
 }
 
 // Replace creates a REPLACE function
-func Replace(column, search, replace schema.Column, resultPtr schema.Column) *Function {
+func Replace(column schema.Column, search, replace string, resultPtr schema.Column) *Function {
 	return &Function{
 		Name:      "REPLACE",
-		Arguments: []schema.Column{column, search, replace},
+		Arguments: []schema.Column{column},
+		Args:      []any{search, replace},
 		Result:    resultPtr,
 	}
 }

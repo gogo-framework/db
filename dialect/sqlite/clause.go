@@ -16,7 +16,7 @@ type SelectClause struct {
 }
 
 func (s *SelectClause) ApplySelect(stmt *SelectStmt) {
-	stmt.columns = s
+	stmt.Columns = s
 }
 
 // Select creates a new SQLite SELECT statement

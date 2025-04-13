@@ -14,11 +14,11 @@ import (
 )
 
 type RowMapper struct {
-	table *schema.Table
+	columns []schema.Column
 }
 
-func NewRowMapper(table *schema.Table) *RowMapper {
-	return &RowMapper{table: table}
+func NewRowMapper(columns []schema.Column) *RowMapper {
+	return &RowMapper{columns: columns}
 }
 
 func (rm *RowMapper) MapRow(rows *sql.Rows) error {
@@ -36,34 +36,42 @@ func (rm *RowMapper) MapRow(rows *sql.Rows) error {
 		return fmt.Errorf("failed to scan row: %w", err)
 	}
 
+	// Create a map of column names to their indices for faster lookup
+	colNameToIndex := make(map[string]int)
 	for i, name := range colNames {
-		col, ok := rm.table.GetColumn(name)
-		if !ok {
+		colNameToIndex[name] = i
+	}
+
+	// Process each column in our schema
+	for _, col := range rm.columns {
+		colName := col.GetName()
+		index, exists := colNameToIndex[colName]
+		if !exists {
 			continue
 		}
 
-		value := *(values[i].(*any))
+		value := *(values[index].(*any))
 		if err := col.Scan(value); err != nil {
-			return fmt.Errorf("failed to scan column %s: %w", name, err)
+			return fmt.Errorf("failed to scan column %s: %w", colName, err)
 		}
 	}
 
 	return nil
 }
 
-func MapAll[T schema.Tabler](rows *sql.Rows) ([]T, error) {
+func MapAll[T schema.Tabler](rows *sql.Rows, columns []schema.Column, model T) ([]T, error) {
 	var result []T
 
 	for rows.Next() {
-		var model T
-		table := model.Table()
-		mapper := NewRowMapper(table)
+		// Create a copy of the model for each row
+		modelCopy := model
+		mapper := NewRowMapper(columns)
 
 		if err := mapper.MapRow(rows); err != nil {
 			return nil, err
 		}
 
-		result = append(result, model)
+		result = append(result, modelCopy)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -73,14 +81,12 @@ func MapAll[T schema.Tabler](rows *sql.Rows) ([]T, error) {
 	return result, nil
 }
 
-func MapOne[T schema.Tabler](rows *sql.Rows) (*T, error) {
+func MapOne[T schema.Tabler](rows *sql.Rows, columns []schema.Column, model T) (*T, error) {
 	if !rows.Next() {
 		return nil, sql.ErrNoRows
 	}
 
-	var model T
-	table := model.Table()
-	mapper := NewRowMapper(table)
+	mapper := NewRowMapper(columns)
 
 	if err := mapper.MapRow(rows); err != nil {
 		return nil, err
@@ -95,39 +101,4 @@ func MapOne[T schema.Tabler](rows *sql.Rows) (*T, error) {
 	}
 
 	return &model, nil
-}
-
-func FindByID[T schema.Tabler](db *sql.DB, id any) (*T, error) {
-	var model T
-	table := model.Table()
-
-	query := fmt.Sprintf("SELECT * FROM %s WHERE id = ?", table.Name)
-
-	rows, err := db.Query(query, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return MapOne[T](rows)
-}
-
-func Find[T schema.Tabler](db *sql.DB, query string, args ...any) ([]T, error) {
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return MapAll[T](rows)
-}
-
-func FindOne[T schema.Tabler](db *sql.DB, query string, args ...any) (*T, error) {
-	rows, err := db.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	return MapOne[T](rows)
 }

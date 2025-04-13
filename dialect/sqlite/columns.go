@@ -17,12 +17,12 @@ func (t *Text) GetType() string {
 
 // ApplySelect implements the SelectPart interface
 func (t *Text) ApplySelect(stmt *SelectStmt) {
-	if stmt.columns == nil {
-		stmt.columns = &SelectClause{
+	if stmt.Columns == nil {
+		stmt.Columns = &SelectClause{
 			SelectClause: &query.SelectClause{},
 		}
 	}
-	stmt.columns.Columns = append(stmt.columns.Columns, t)
+	stmt.Columns.Columns = append(stmt.Columns.Columns, t)
 }
 
 // Integer represents a SQLite INTEGER column
@@ -37,12 +37,12 @@ func (i *Integer) GetType() string {
 
 // ApplySelect implements the SelectPart interface
 func (i *Integer) ApplySelect(stmt *SelectStmt) {
-	if stmt.columns == nil {
-		stmt.columns = &SelectClause{
+	if stmt.Columns == nil {
+		stmt.Columns = &SelectClause{
 			SelectClause: &query.SelectClause{},
 		}
 	}
-	stmt.columns.Columns = append(stmt.columns.Columns, i)
+	stmt.Columns.Columns = append(stmt.Columns.Columns, i)
 }
 
 // Float represents a SQLite REAL column
@@ -57,12 +57,12 @@ func (f *Float) GetType() string {
 
 // ApplySelect implements the SelectPart interface
 func (f *Float) ApplySelect(stmt *SelectStmt) {
-	if stmt.columns == nil {
-		stmt.columns = &SelectClause{
+	if stmt.Columns == nil {
+		stmt.Columns = &SelectClause{
 			SelectClause: &query.SelectClause{},
 		}
 	}
-	stmt.columns.Columns = append(stmt.columns.Columns, f)
+	stmt.Columns.Columns = append(stmt.Columns.Columns, f)
 }
 
 // Blob represents a SQLite BLOB column
@@ -77,10 +77,10 @@ func (b *Blob) GetType() string {
 
 // ApplySelect implements the SelectPart interface
 func (b *Blob) ApplySelect(stmt *SelectStmt) {
-	if stmt.columns == nil {
-		stmt.columns = &SelectClause{
+	if stmt.Columns == nil {
+		stmt.Columns = &SelectClause{
 			SelectClause: &query.SelectClause{},
 		}
 	}
-	stmt.columns.Columns = append(stmt.columns.Columns, b)
+	stmt.Columns.Columns = append(stmt.Columns.Columns, b)
 }
