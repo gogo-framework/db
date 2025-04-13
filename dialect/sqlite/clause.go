@@ -117,44 +117,6 @@ func (w *WhereClause) And(conditions ...query.Condition) *WhereClause {
 	return w
 }
 
-// Or creates an OR condition
-func Or(conditions ...query.Condition) query.Condition {
-	return &query.OrCondition{Conditions: conditions}
-}
-
-// Condition builders that wrap query package functions
-func Equal[T any](column schema.Column, value T) query.Condition {
-	return query.Eq(column, value)
-}
-
-func NotEqual[T any](column schema.Column, value T) query.Condition {
-	return query.Neq(column, value)
-}
-
-func GreaterThan[T any](column schema.Column, value T) query.Condition {
-	return query.Gt(column, value)
-}
-
-func GreaterThanOrEqual[T any](column schema.Column, value T) query.Condition {
-	return query.Gte(column, value)
-}
-
-func LessThan[T any](column schema.Column, value T) query.Condition {
-	return query.Lt(column, value)
-}
-
-func LessThanOrEqual[T any](column schema.Column, value T) query.Condition {
-	return query.Lte(column, value)
-}
-
-func Like(column schema.Column, pattern string) query.Condition {
-	return query.Like(column, pattern)
-}
-
-func In[T any](column schema.Column, values ...T) query.Condition {
-	return query.In(column, values...)
-}
-
 // OrderByClause represents an ORDER BY clause in SQLite
 type OrderByClause struct {
 	*query.OrderByClause

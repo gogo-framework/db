@@ -33,11 +33,17 @@ func (u *User) Table() *schema.Table {
 	return u.table
 }
 
+// UserStats represents aggregated user statistics
+type UserStats struct {
+	User
+	AverageAge    sqlite.Float
+	UppercaseName sqlite.Text
+}
+
 func main() {
 	user := schema.NewTable[User]()
-
-	// Comprehensive example demonstrating all supported clauses
 	query, args := sqlite.Select(
+		sqlite.Distinct(),
 		&user.ID, &user.Username, &user.Email, &user.Age, &user.Score, &user.CreatedAt,
 		sqlite.From(user).As("u"),
 		sqlite.Where(
@@ -54,10 +60,37 @@ func main() {
 		sqlite.OrderBy(&user.Username, &user.ID),
 		sqlite.Limit(10),
 		sqlite.Offset(20),
-		sqlite.Distinct(),
 	).ToSql()
 
 	fmt.Println("Generated SQL Query:")
+	fmt.Println(query)
+	fmt.Println("\nQuery Arguments:")
+	fmt.Println(args)
+
+	// New example with aggregation and function
+	userStats := schema.NewTable[UserStats]()
+	query, args = sqlite.Select(
+		&userStats.ID,
+		&userStats.Username,
+		sqlite.Avg(&userStats.Age, &userStats.AverageAge),
+		sqlite.Upper(&userStats.Username, &userStats.UppercaseName),
+		sqlite.From(userStats),
+		sqlite.GroupBy(&userStats.ID, &userStats.Username),
+	).ToSql()
+
+	fmt.Println("\nGenerated SQL Query:")
+	fmt.Println(query)
+	fmt.Println("\nQuery Arguments:")
+	fmt.Println(args)
+
+	// New example with SQLite function
+	query, args = sqlite.Select(
+		&user.ID,
+		sqlite.Upper(&user.Username, &user.Username),
+		sqlite.From(user),
+	).ToSql()
+
+	fmt.Println("\nGenerated SQL Query with Function:")
 	fmt.Println(query)
 	fmt.Println("\nQuery Arguments:")
 	fmt.Println(args)
