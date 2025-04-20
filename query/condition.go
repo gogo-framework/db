@@ -27,14 +27,14 @@ const (
 
 // Condition is an interface for SQL conditions
 type Condition interface {
-	SqlWriter
+	Expression
 }
 
 // BinaryCondition represents a binary operation (e.g., =, >, <)
 type BinaryCondition struct {
-	Left  SqlWriter
+	Left  Expression
 	Op    Operator
-	Right SqlWriter
+	Right Expression
 }
 
 func (c *BinaryCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
@@ -88,8 +88,8 @@ func (c *OrCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Diale
 
 // InCondition represents an IN clause
 type InCondition struct {
-	Column SqlWriter
-	Values []SqlWriter
+	Column Expression
+	Values []Expression
 }
 
 func (c *InCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
@@ -121,8 +121,8 @@ func (c *InCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Diale
 
 // NotLikeCondition represents a NOT LIKE clause
 type NotLikeCondition struct {
-	Column  SqlWriter
-	Pattern SqlWriter
+	Column  Expression
+	Pattern Expression
 }
 
 func (c *NotLikeCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
@@ -147,8 +147,8 @@ func (c *NotLikeCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.
 
 // NotInCondition represents a NOT IN clause
 type NotInCondition struct {
-	Column SqlWriter
-	Values []SqlWriter
+	Column Expression
+	Values []Expression
 }
 
 func (c *NotInCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
@@ -178,7 +178,7 @@ func (c *NotInCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Di
 
 // IsNullCondition represents an IS NULL clause
 type IsNullCondition struct {
-	Column SqlWriter
+	Column Expression
 }
 
 func (c *IsNullCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
@@ -192,7 +192,7 @@ func (c *IsNullCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.D
 
 // IsNotNullCondition represents an IS NOT NULL clause
 type IsNotNullCondition struct {
-	Column SqlWriter
+	Column Expression
 }
 
 func (c *IsNotNullCondition) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
@@ -205,7 +205,7 @@ func (c *IsNotNullCondition) WriteSql(ctx context.Context, w io.Writer, d dialec
 }
 
 // Condition builder functions
-func Eq[T any](column SqlWriter, value T) Condition {
+func Eq[T any](column Expression, value T) Condition {
 	return &BinaryCondition{
 		Left:  column,
 		Op:    OpEqual,
@@ -213,7 +213,7 @@ func Eq[T any](column SqlWriter, value T) Condition {
 	}
 }
 
-func Neq[T any](column SqlWriter, value T) Condition {
+func Neq[T any](column Expression, value T) Condition {
 	return &BinaryCondition{
 		Left:  column,
 		Op:    OpNotEqual,
@@ -221,7 +221,7 @@ func Neq[T any](column SqlWriter, value T) Condition {
 	}
 }
 
-func Gt[T any](column SqlWriter, value T) Condition {
+func Gt[T any](column Expression, value T) Condition {
 	return &BinaryCondition{
 		Left:  column,
 		Op:    OpGreaterThan,
@@ -229,7 +229,7 @@ func Gt[T any](column SqlWriter, value T) Condition {
 	}
 }
 
-func Gte[T any](column SqlWriter, value T) Condition {
+func Gte[T any](column Expression, value T) Condition {
 	return &BinaryCondition{
 		Left:  column,
 		Op:    OpGreaterThanOrEqual,
@@ -237,7 +237,7 @@ func Gte[T any](column SqlWriter, value T) Condition {
 	}
 }
 
-func Lt[T any](column SqlWriter, value T) Condition {
+func Lt[T any](column Expression, value T) Condition {
 	return &BinaryCondition{
 		Left:  column,
 		Op:    OpLessThan,
@@ -245,7 +245,7 @@ func Lt[T any](column SqlWriter, value T) Condition {
 	}
 }
 
-func Lte[T any](column SqlWriter, value T) Condition {
+func Lte[T any](column Expression, value T) Condition {
 	return &BinaryCondition{
 		Left:  column,
 		Op:    OpLessThanOrEqual,
@@ -253,7 +253,7 @@ func Lte[T any](column SqlWriter, value T) Condition {
 	}
 }
 
-func Like(column SqlWriter, pattern string) Condition {
+func Like(column Expression, pattern string) Condition {
 	return &BinaryCondition{
 		Left:  column,
 		Op:    OpLike,
@@ -261,8 +261,8 @@ func Like(column SqlWriter, pattern string) Condition {
 	}
 }
 
-func In[T any](column SqlWriter, values ...T) Condition {
-	literals := make([]SqlWriter, len(values))
+func In[T any](column Expression, values ...T) Condition {
+	literals := make([]Expression, len(values))
 	for i, v := range values {
 		literals[i] = NewLiteral(v)
 	}
@@ -273,7 +273,7 @@ func In[T any](column SqlWriter, values ...T) Condition {
 }
 
 // NotLike creates a NOT LIKE condition
-func NotLike(column SqlWriter, pattern string) Condition {
+func NotLike(column Expression, pattern string) Condition {
 	return &NotLikeCondition{
 		Column:  column,
 		Pattern: NewLiteral(pattern),
@@ -281,8 +281,8 @@ func NotLike(column SqlWriter, pattern string) Condition {
 }
 
 // NotIn creates a NOT IN condition
-func NotIn[T any](column SqlWriter, values ...T) Condition {
-	literals := make([]SqlWriter, len(values))
+func NotIn[T any](column Expression, values ...T) Condition {
+	literals := make([]Expression, len(values))
 	for i, v := range values {
 		literals[i] = NewLiteral(v)
 	}
@@ -293,14 +293,14 @@ func NotIn[T any](column SqlWriter, values ...T) Condition {
 }
 
 // IsNull creates an IS NULL condition
-func IsNull(column SqlWriter) Condition {
+func IsNull(column Expression) Condition {
 	return &IsNullCondition{
 		Column: column,
 	}
 }
 
 // IsNotNull creates an IS NOT NULL condition
-func IsNotNull(column SqlWriter) Condition {
+func IsNotNull(column Expression) Condition {
 	return &IsNotNullCondition{
 		Column: column,
 	}

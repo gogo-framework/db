@@ -9,7 +9,6 @@ import (
 
 // User represents a user in the database
 type User struct {
-	table     *schema.Table
 	ID        sqlite.Integer
 	Username  sqlite.Text
 	Email     sqlite.Text
@@ -20,17 +19,14 @@ type User struct {
 
 // Table implements the Tabler interface
 func (u *User) Table() *schema.Table {
-	if u.table == nil {
-		u.table = sqlite.NewTable("users", func(t *schema.Table) {
-			t.RegisterColumn("id", &u.ID)
-			t.RegisterColumn("username", &u.Username)
-			t.RegisterColumn("email", &u.Email)
-			t.RegisterColumn("age", &u.Age)
-			t.RegisterColumn("score", &u.Score)
-			t.RegisterColumn("created_at", &u.CreatedAt)
-		})
-	}
-	return u.table
+	return sqlite.NewTable("users", func(t *schema.Table) {
+		t.RegisterColumn("id", &u.ID)
+		t.RegisterColumn("username", &u.Username)
+		t.RegisterColumn("email", &u.Email)
+		t.RegisterColumn("age", &u.Age)
+		t.RegisterColumn("score", &u.Score)
+		t.RegisterColumn("created_at", &u.CreatedAt)
+	})
 }
 
 // UserStats represents aggregated user statistics

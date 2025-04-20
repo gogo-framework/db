@@ -26,7 +26,7 @@ type SelectStmt struct {
 	limitOffset *LimitOffsetClause
 }
 
-// WriteSql implements the SqlWriter interface
+// WriteSql implements the Expression interface
 func (s *SelectStmt) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
 	if s.columns == nil || len(s.columns.Columns) == 0 {
 		return nil, fmt.Errorf("no columns selected")

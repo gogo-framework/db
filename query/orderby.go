@@ -10,7 +10,7 @@ import (
 
 // OrderByClause represents an ORDER BY clause
 type OrderByClause struct {
-	Columns []SqlWriter
+	Columns []Expression
 }
 
 func (o *OrderByClause) ApplySelect(stmt *SelectStmt) {
@@ -38,7 +38,7 @@ func (o *OrderByClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dia
 }
 
 // OrderBy creates an ORDER BY clause
-func OrderBy(columns ...SqlWriter) SelectPart {
+func OrderBy(columns ...Expression) SelectPart {
 	return &OrderByClause{
 		Columns: columns,
 	}

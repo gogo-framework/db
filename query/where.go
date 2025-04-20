@@ -16,7 +16,7 @@ func (w *WhereClause) ApplySelect(stmt *SelectStmt) {
 	stmt.where = w
 }
 
-// WriteSql implements the SqlWriter interface
+// WriteSql implements the Expression interface
 func (w *WhereClause) WriteSql(ctx context.Context, writer io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
 	if len(w.Conditions) == 0 {
 		return nil, nil

@@ -9,7 +9,7 @@ import (
 
 // GroupByClause represents a GROUP BY clause
 type GroupByClause struct {
-	Columns []SqlWriter
+	Columns []Expression
 }
 
 func (g *GroupByClause) ApplySelect(stmt *SelectStmt) {
@@ -36,7 +36,7 @@ func (g *GroupByClause) WriteSql(ctx context.Context, w io.Writer, d dialect.Dia
 }
 
 // GroupBy creates a GROUP BY clause
-func GroupBy(columns ...SqlWriter) SelectPart {
+func GroupBy(columns ...Expression) SelectPart {
 	return &GroupByClause{
 		Columns: columns,
 	}

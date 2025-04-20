@@ -67,7 +67,7 @@ func (a *Aggregation) Value() (driver.Value, error) {
 	return a.Column.Value()
 }
 
-// WriteSql implements the SqlWriter interface
+// WriteSql implements the Expression interface
 func (a *Aggregation) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
 	// Write the function name and opening parenthesis
 	w.Write([]byte(a.Function))

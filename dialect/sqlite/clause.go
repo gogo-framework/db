@@ -32,20 +32,6 @@ func Select(parts ...SelectPart) *SelectStmt {
 	return stmt
 }
 
-// sqlWriterTabler is a wrapper that implements both Tabler and SqlWriter
-type sqlWriterTabler struct {
-	writer query.SqlWriter
-}
-
-func (s *sqlWriterTabler) Table() *schema.Table {
-	// For SqlWriter, we create a dummy table since we don't need it for SQL generation
-	return &schema.Table{Name: "dummy"}
-}
-
-func (s *sqlWriterTabler) WriteSql(ctx context.Context, w io.Writer, d dialect.Dialect, argPos int) ([]any, error) {
-	return s.writer.WriteSql(ctx, w, d, argPos)
-}
-
 // FromClause represents a FROM clause in SQLite
 type FromClause struct {
 	*query.FromClause
@@ -69,27 +55,11 @@ func (f *FromClause) As(alias string) SelectPart {
 }
 
 // From creates a FROM clause
-func From(source any) *FromClause {
-	if tabler, ok := source.(schema.Tabler); ok {
-		return &FromClause{
-			FromClause: &query.FromClause{
-				Source: tabler,
-			},
-		}
-	}
-
-	if writer, ok := source.(query.SqlWriter); ok {
-		wrapper := &sqlWriterTabler{writer: writer}
-		return &FromClause{
-			FromClause: &query.FromClause{
-				Source: wrapper,
-			},
-		}
-	}
-
+func From(source schema.Tabler) *FromClause {
 	return &FromClause{
-		FromClause:    &query.FromClause{},
-		invalidSource: true,
+		FromClause: &query.FromClause{
+			Source: source,
+		},
 	}
 }
 
@@ -127,7 +97,7 @@ func (o *OrderByClause) ApplySelect(stmt *SelectStmt) {
 }
 
 // OrderBy creates an ORDER BY clause
-func OrderBy(columns ...query.SqlWriter) *OrderByClause {
+func OrderBy(columns ...query.Expression) *OrderByClause {
 	return &OrderByClause{
 		OrderByClause: &query.OrderByClause{
 			Columns: columns,
@@ -198,7 +168,7 @@ func (g *GroupByClause) ApplySelect(stmt *SelectStmt) {
 }
 
 // GroupBy creates a GROUP BY clause
-func GroupBy(columns ...query.SqlWriter) *GroupByClause {
+func GroupBy(columns ...query.Expression) *GroupByClause {
 	return &GroupByClause{
 		GroupByClause: &query.GroupByClause{
 			Columns: columns,
