@@ -1,8 +1,8 @@
 package sqlite
 
 import (
-	"github.com/gogo-framework/db/query"
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/internal/query"
+	"github.com/gogo-framework/db/internal/schema"
 )
 
 // Function represents a SQLite-specific function

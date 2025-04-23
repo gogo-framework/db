@@ -8,7 +8,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gogo-framework/db/dialect/sqlite"
 	"github.com/gogo-framework/db/internal"
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/internal/schema"
 )
 
 // User represents a user in the system

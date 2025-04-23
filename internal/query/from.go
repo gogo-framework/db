@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/internal/schema"
 )
 
 // FromClause represents a FROM clause

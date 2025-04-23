@@ -10,7 +10,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/internal/schema"
 )
 
 type RowMapper struct {

@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
-	"github.com/gogo-framework/db/query"
+	"github.com/gogo-framework/db/internal/query"
 )
 
 // SelectPart represents a part of a SELECT statement that can be applied to a SelectStmt

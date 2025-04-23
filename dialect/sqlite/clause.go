@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
-	"github.com/gogo-framework/db/query"
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/internal/query"
+	"github.com/gogo-framework/db/internal/schema"
 )
 
 // SelectClause represents a SELECT clause in SQLite

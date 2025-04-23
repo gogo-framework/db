@@ -1,8 +1,8 @@
 package sqlite
 
 import (
-	"github.com/gogo-framework/db/query"
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/internal/query"
+	"github.com/gogo-framework/db/internal/schema"
 )
 
 func Or(conditions ...query.Condition) query.Condition {

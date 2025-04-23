@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/gogo-framework/db/dialect"
-	"github.com/gogo-framework/db/schema"
+	"github.com/gogo-framework/db/internal/schema"
 )
 
 // Function represents a SQL function call
